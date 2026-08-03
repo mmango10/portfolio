@@ -1,0 +1,12 @@
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      # Check daily so eligible releases are picked up promptly after cooldown.
+      interval: daily
+    cooldown:
+      # Keep dependency version-update PRs at least seven days behind release.
+      default-days: 7
+    open-pull-requests-limit: 5
