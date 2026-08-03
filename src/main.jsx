@@ -5,6 +5,10 @@ import { about, grandImage, mediaSections, site } from './data';
 import { filmVideos, normalizeFilmVideo } from './videoData';
 import './styles.css';
 
+const GRAND_IMAGE_ROTATION_MS = 7000;
+const GRAND_IMAGE_PRELOAD_LEAD_MS = 3000;
+const GRAND_IMAGE_FADE_MS = 280;
+
 function normalizePathname() {
   return window.location.pathname.replace(/\/+$/, '') || '/';
 }
@@ -57,6 +61,26 @@ function withFilmVideos(section, items) {
   return section.id === 'film'
     ? [...filmVideos.map(normalizeFilmVideo), ...items]
     : items;
+}
+
+function usePrefersReducedMotion() {
+  const [reducedMotion, setReducedMotion] = useState(() => (
+    typeof window !== 'undefined'
+      && typeof window.matchMedia === 'function'
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  ));
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    if (!mediaQuery) return undefined;
+
+    const handleChange = () => setReducedMotion(mediaQuery.matches);
+    handleChange();
+    mediaQuery.addEventListener?.('change', handleChange);
+    return () => mediaQuery.removeEventListener?.('change', handleChange);
+  }, []);
+
+  return reducedMotion;
 }
 
 function navHref(item, pathname) {
@@ -164,10 +188,77 @@ function Intro() {
   );
 }
 
-function GrandImage({ item, loading }) {
+function GrandImage({ items, loading }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [fading, setFading] = useState(false);
+  const reducedMotion = usePrefersReducedMotion();
+  const itemSignature = items.map((item) => item.id).join('|');
+  const activeItem = items[activeIndex] || items[0];
+
+  useEffect(() => {
+    setActiveIndex(0);
+    setFading(false);
+  }, [itemSignature]);
+
+  useEffect(() => {
+    if (reducedMotion) setFading(false);
+  }, [reducedMotion]);
+
+  useEffect(() => {
+    if (reducedMotion || items.length < 2) return undefined;
+
+    const preloadedImages = new Map();
+    let currentIndex = 0;
+    let preloadTimer;
+    let rotationTimer;
+    let fadeToBlackTimer;
+    let revealTimer;
+
+    const preload = (item) => {
+      if (!item?.src || preloadedImages.has(item.src)) return;
+
+      const image = new window.Image();
+      image.decoding = 'async';
+      image.src = item.src;
+      preloadedImages.set(item.src, image);
+      const decodePromise = image.decode?.();
+      decodePromise?.catch(() => {});
+    };
+
+    const scheduleNextRotation = () => {
+      const nextIndex = (currentIndex + 1) % items.length;
+      preloadTimer = window.setTimeout(() => preload(items[nextIndex]), GRAND_IMAGE_ROTATION_MS - GRAND_IMAGE_PRELOAD_LEAD_MS);
+      rotationTimer = window.setTimeout(() => {
+        setFading(true);
+        fadeToBlackTimer = window.setTimeout(() => {
+          currentIndex = nextIndex;
+          setActiveIndex(nextIndex);
+          revealTimer = window.setTimeout(() => {
+            setFading(false);
+            scheduleNextRotation();
+          }, GRAND_IMAGE_FADE_MS);
+        }, GRAND_IMAGE_FADE_MS);
+      }, GRAND_IMAGE_ROTATION_MS);
+    };
+
+    scheduleNextRotation();
+
+    return () => {
+      window.clearTimeout(preloadTimer);
+      window.clearTimeout(rotationTimer);
+      window.clearTimeout(fadeToBlackTimer);
+      window.clearTimeout(revealTimer);
+      preloadedImages.clear();
+    };
+  }, [itemSignature, items.length, reducedMotion]);
+
+  if (!activeItem) return null;
+
   return (
     <section className="featured-gallery" aria-label="Grand image">
-      <MediaPlaceholder item={item} featured loading={loading} />
+      <div className={`featured-gallery__rotator${fading ? ' featured-gallery__rotator--fading' : ''}`}>
+        <MediaPlaceholder key={activeItem.id} item={activeItem} featured loading={loading} />
+      </div>
     </section>
   );
 }
@@ -198,6 +289,10 @@ function MediaSection({ section, loading }) {
 }
 
 function ArchivePage({ section, loading }) {
+  const archiveItems = section.id === 'film'
+    ? section.items.filter((item) => item.type === 'video' || Boolean(item.src))
+    : section.items;
+
   return (
     <main className={`archive-page archive-page--${section.id}`} id="main-content" aria-labelledby={`${section.id}-archive-title`}>
       <div className="section-heading archive-page__heading">
@@ -205,7 +300,7 @@ function ArchivePage({ section, loading }) {
         <span>{section.descriptor}</span>
       </div>
       <div className="media-grid archive-page__grid">
-        {section.items.map((item) => <MediaPlaceholder item={item} loading={loading} key={item.id} />)}
+        {archiveItems.map((item) => <MediaPlaceholder item={item} loading={loading} key={item.id} />)}
       </div>
     </main>
   );
@@ -220,7 +315,10 @@ function AboutSection() {
       </div>
       <div className="about-section__content">
         <p>{about.text}</p>
-        <a href={`mailto:${site.email}`} className="about-section__email">{site.email}</a>
+        <div className="about-section__awards">
+          <h3>Awards</h3>
+          <p>{about.awards}</p>
+        </div>
       </div>
     </section>
   );
@@ -251,7 +349,6 @@ function Footer() {
     <footer className="footer">
       <div className="footer__top">
         <span>{site.name}</span>
-        <a href={`mailto:${site.email}`}>{site.email}</a>
       </div>
       <SocialLinks />
       <div className="footer__bottom">
@@ -270,12 +367,16 @@ function App() {
     items: withFilmVideos(section, section.items),
   }));
   const activeSections = cloudinaryMedia.status === 'ready'
-    ? mediaSections.map((section) => withCloudinaryItems(section, cloudinaryMedia.sections[section.id] || []))
+    ? mediaSections.map((section) => {
+      const assets = cloudinaryMedia.sections[section.id];
+      if (Array.isArray(assets)) return withCloudinaryItems(section, assets);
+      return fallbackSections.find((fallbackSection) => fallbackSection.id === section.id);
+    })
     : fallbackSections;
-  const grandImageAsset = cloudinaryMedia.status === 'ready' ? cloudinaryMedia.sections.grandImage?.[0] : null;
-  const activeGrandImage = grandImageAsset
-    ? normalizeCloudinaryAsset(grandImageAsset, grandImage, 0, grandImage)
-    : grandImage;
+  const grandImageAssets = cloudinaryMedia.status === 'ready' ? cloudinaryMedia.sections.grandImage : null;
+  const grandImageItems = Array.isArray(grandImageAssets) && grandImageAssets.length > 0
+    ? grandImageAssets.map((asset, index) => normalizeCloudinaryAsset(asset, grandImage, index, grandImage))
+    : [grandImage];
   const mediaLoading = cloudinaryMedia.status === 'loading';
   const archiveSection = activeSections.find((section) => pathname === `/${section.id}`);
 
@@ -292,7 +393,7 @@ function App() {
       ) : (
         <main id="main-content">
           <Intro />
-          <GrandImage item={activeGrandImage} loading={mediaLoading} />
+          <GrandImage items={grandImageItems} loading={mediaLoading} />
           {activeSections.map((section) => <MediaSection section={section} loading={mediaLoading} key={section.id} />)}
           <AboutSection />
         </main>

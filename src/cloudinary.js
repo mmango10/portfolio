@@ -36,6 +36,17 @@ function fallbackName(publicId) {
   return publicId.split('/').pop()?.replace(/[-_]+/g, ' ') || 'Untitled image';
 }
 
+function shuffleAssets(items) {
+  const shuffled = [...items];
+
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(Math.random() * (index + 1));
+    [shuffled[index], shuffled[randomIndex]] = [shuffled[randomIndex], shuffled[index]];
+  }
+
+  return shuffled;
+}
+
 function spanForAspect(width, height, fallbackSpan = 6, fallbackRatio = '') {
   let aspect = width > 0 && height > 0 ? width / height : 0;
 
@@ -82,15 +93,30 @@ export function normalizeCloudinaryAsset(asset, section, index, fallbackItem = {
 
 async function fetchTag(tag, signal) {
   const response = await fetch(cloudinaryListUrl(tag), { signal });
-  if (!response.ok) throw new Error(`Cloudinary list request failed (${response.status})`);
+  if (!response.ok) {
+    const error = new Error(`Cloudinary list request failed (${response.status})`);
+    error.status = response.status;
+    throw error;
+  }
 
   const payload = await response.json();
-  return Array.isArray(payload.resources) ? payload.resources : [];
+  return Array.isArray(payload.resources) ? shuffleAssets(payload.resources) : [];
 }
 
 export async function fetchCloudinarySections(signal) {
   const sectionEntries = await Promise.all(
-    Object.entries(cloudinaryConfig.tags).map(async ([sectionId, tag]) => [sectionId, await fetchTag(tag, signal)]),
+    Object.entries(cloudinaryConfig.tags).map(async ([sectionId, tag]) => {
+      try {
+        return [sectionId, await fetchTag(tag, signal)];
+      } catch (error) {
+        if (error.name === 'AbortError') throw error;
+
+        // Cloudinary returns 404 when a tag has no resources. Keep each
+        // gallery independent so one empty tag cannot hide other galleries.
+        console.warn(`Cloudinary tag "${tag}" unavailable; using its local fallback.`, error);
+        return [sectionId, null];
+      }
+    }),
   );
 
   return Object.fromEntries(sectionEntries);
