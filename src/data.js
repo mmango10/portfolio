@@ -16,12 +16,16 @@ export const site = {
   ],
 };
 
-export const featuredMedia = [
-  { id: 'coastline', section: 'Life', title: 'Coastline', meta: '01 / Life', ratio: '1 / 1', span: 7, color: '#b8a18e' },
-  { id: 'track', section: 'Sports', title: 'Track', meta: '02 / Sports', ratio: '4 / 5', span: 5, color: '#8e9aa0' },
-  { id: 'night-drive', section: 'Life', title: 'Night drive', meta: '03 / Life', ratio: '16 / 10', span: 5, color: '#a89d82' },
-  { id: 'on-air', section: 'Film/video', title: 'On the air', meta: '04 / Film/video', ratio: '4 / 5', span: 7, color: '#9b8698' },
-];
+export const grandImage = {
+  id: 'grand-image',
+  label: 'Grand image',
+  section: 'Grand image',
+  title: 'Grand image',
+  meta: 'Grand image',
+  ratio: '16 / 9',
+  span: 12,
+  color: '#b8a18e',
+};
 
 export const mediaSections = [
   {

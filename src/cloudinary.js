@@ -6,6 +6,7 @@ export const cloudinaryConfig = {
     life: 'life',
     sports: 'sports',
     film: 'film',
+    grandImage: 'grand_image',
   },
 };
 

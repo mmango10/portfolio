@@ -1,7 +1,7 @@
 import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { fetchCloudinarySections, isCloudinaryConfigured, normalizeCloudinaryAsset } from './cloudinary';
-import { about, featuredMedia, mediaSections, site } from './data';
+import { about, grandImage, mediaSections, site } from './data';
 import './styles.css';
 
 function normalizePathname() {
@@ -52,16 +52,6 @@ function withCloudinaryItems(section, assets) {
   };
 }
 
-function getFeaturedMedia(sections) {
-  return sections
-    .flatMap((section) => section.items.slice(0, 2).map((item, index) => ({
-      ...item,
-      meta: `${String(index + 1).padStart(2, '0')} / ${section.label}`,
-      section: section.label,
-    })))
-    .slice(0, 4);
-}
-
 function navHref(item, pathname) {
   if (item.id === about.id) return pathname === '/' ? '#about' : '/#about';
   return `/${item.id}`;
@@ -87,30 +77,44 @@ function TopNav({ pathname }) {
   );
 }
 
-function MediaPlaceholder({ item, featured = false }) {
+function MediaPlaceholder({ item, featured = false, loading = false }) {
   const isImage = Boolean(item.src);
+  const [imageState, setImageState] = useState(isImage ? 'loading' : 'idle');
+
+  useEffect(() => {
+    setImageState(item.src ? 'loading' : 'idle');
+  }, [item.src]);
+
+  const imageFailed = imageState === 'error';
+  const showImage = isImage && !imageFailed;
+  const imageLoading = showImage && imageState === 'loading';
+  const showSkeleton = (loading && !imageFailed) || imageLoading;
 
   return (
     <div
-      className={`media-placeholder${featured ? ' media-placeholder--featured' : ''}${isImage ? ' media-placeholder--image' : ''}`}
+      className={`media-placeholder${featured ? ' media-placeholder--featured' : ''}${showImage ? ' media-placeholder--image' : ''}${showSkeleton ? ' media-placeholder--loading' : ''}`}
       style={{ '--block-color': item.color, '--block-ratio': item.ratio, '--block-span': item.span }}
-      {...(isImage ? {} : { role: 'img', 'aria-label': `${item.title} placeholder; replace with Dennis's media` })}
+      aria-busy={showSkeleton || undefined}
+      {...(showImage ? {} : { role: 'img', 'aria-label': loading ? `${item.title} media loading` : `${item.title} placeholder; replace with Dennis's media` })}
     >
-      {isImage ? (
+      {showSkeleton && <span className="media-placeholder__skeleton" aria-hidden="true" />}
+      {showImage ? (
         <img
-          className="media-placeholder__image"
+          className={`media-placeholder__image${imageLoading ? ' media-placeholder__image--loading' : ''}`}
           src={item.src}
           alt={item.alt || item.title}
           loading={featured ? 'eager' : 'lazy'}
           decoding="async"
+          onLoad={() => setImageState('loaded')}
+          onError={() => setImageState('error')}
         />
-      ) : (
+      ) : (!loading || imageFailed) ? (
         <>
           <span className="media-placeholder__meta">{item.meta || item.section}</span>
           <span className="media-placeholder__title">{item.title}</span>
-          <span className="media-placeholder__replace">Media placeholder</span>
+          <span className="media-placeholder__replace">{imageFailed ? 'Media unavailable' : 'Media placeholder'}</span>
         </>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -125,15 +129,15 @@ function Intro() {
   );
 }
 
-function FeaturedGallery({ items }) {
+function GrandImage({ item, loading }) {
   return (
-    <section className="featured-gallery" aria-label="Selected visual work">
-      {items.map((item) => <MediaPlaceholder item={item} featured key={item.id} />)}
+    <section className="featured-gallery" aria-label="Grand image">
+      <MediaPlaceholder item={item} featured loading={loading} />
     </section>
   );
 }
 
-function MediaSection({ section }) {
+function MediaSection({ section, loading }) {
   const previewItems = section.items.slice(0, section.previewCount ?? section.items.length);
 
   return (
@@ -152,13 +156,13 @@ function MediaSection({ section }) {
         <span>{section.descriptor}</span>
       </div>
       <div className="media-grid">
-        {previewItems.map((item) => <MediaPlaceholder item={item} key={item.id} />)}
+        {previewItems.map((item) => <MediaPlaceholder item={item} loading={loading} key={item.id} />)}
       </div>
     </section>
   );
 }
 
-function ArchivePage({ section }) {
+function ArchivePage({ section, loading }) {
   return (
     <main className="archive-page" id="main-content" aria-labelledby={`${section.id}-archive-title`}>
       <div className="section-heading archive-page__heading">
@@ -166,7 +170,7 @@ function ArchivePage({ section }) {
         <span>{section.descriptor}</span>
       </div>
       <div className="media-grid archive-page__grid">
-        {section.items.map((item) => <MediaPlaceholder item={item} key={item.id} />)}
+        {section.items.map((item) => <MediaPlaceholder item={item} loading={loading} key={item.id} />)}
       </div>
     </main>
   );
@@ -229,7 +233,11 @@ function App() {
   const activeSections = cloudinaryMedia.status === 'ready'
     ? mediaSections.map((section) => withCloudinaryItems(section, cloudinaryMedia.sections[section.id] || []))
     : mediaSections;
-  const activeFeaturedMedia = cloudinaryMedia.status === 'ready' ? getFeaturedMedia(activeSections) : featuredMedia;
+  const grandImageAsset = cloudinaryMedia.status === 'ready' ? cloudinaryMedia.sections.grandImage?.[0] : null;
+  const activeGrandImage = grandImageAsset
+    ? normalizeCloudinaryAsset(grandImageAsset, grandImage, 0, grandImage)
+    : grandImage;
+  const mediaLoading = cloudinaryMedia.status === 'loading';
   const archiveSection = activeSections.find((section) => pathname === `/${section.id}`);
 
   useEffect(() => {
@@ -241,12 +249,12 @@ function App() {
       <a className="skip-link" href="#main-content">Skip to content</a>
       <TopNav pathname={pathname} />
       {archiveSection ? (
-        <ArchivePage section={archiveSection} />
+        <ArchivePage section={archiveSection} loading={mediaLoading} />
       ) : (
         <main id="main-content">
           <Intro />
-          <FeaturedGallery items={activeFeaturedMedia} />
-          {activeSections.map((section) => <MediaSection section={section} key={section.id} />)}
+          <GrandImage item={activeGrandImage} loading={mediaLoading} />
+          {activeSections.map((section) => <MediaSection section={section} loading={mediaLoading} key={section.id} />)}
           <AboutSection />
         </main>
       )}
