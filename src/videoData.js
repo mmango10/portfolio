@@ -34,14 +34,40 @@ function googleDriveEmbedUrl(driveUrl) {
   }
 }
 
-// Add or remove Film videos in this list. Use youtubeUrl for YouTube, or
-// googleDriveUrl for a Google Drive share or /preview URL.
+function instagramPermalinkUrl(instagramUrl) {
+  try {
+    const url = new URL(instagramUrl);
+    const hostname = url.hostname.replace(/^www\./, '');
+    if (!['instagram.com', 'm.instagram.com'].includes(hostname)) return '';
+
+    const pathParts = url.pathname.split('/').filter(Boolean);
+    const mediaTypeIndex = pathParts.findIndex((part) => ['p', 'reel', 'tv'].includes(part));
+    const mediaType = mediaTypeIndex >= 0 ? pathParts[mediaTypeIndex] : '';
+    const shortcode = mediaTypeIndex >= 0 ? pathParts[mediaTypeIndex + 1] : '';
+
+    return mediaType && shortcode
+      ? `https://www.instagram.com/${mediaType}/${encodeURIComponent(shortcode)}/`
+      : '';
+  } catch {
+    return '';
+  }
+}
+
+// Add or remove Film videos in this list. Use youtubeUrl for YouTube,
+// instagramUrl for Instagram, or googleDriveUrl for a Google Drive share or
+// /preview URL.
 export const filmVideos = [
   {
     id: 'bells-books-documentary',
     youtubeUrl: 'https://www.youtube.com/watch?v=aLbqUWNAClI',
     title: 'Bells Books Documentary',
     description: 'A documentary about a local bookstore in Palo Alto, California. Showcasing their backstory, how they started, and cool books.',
+  },
+  {
+    id: 'snr-paper-toss-2026',
+    instagramUrl: 'https://www.instagram.com/reel/DY8u_hDyz-4/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==',
+    title: 'Senior Paper Toss 2026',
+    description: 'A video capturing the Senior Paper Toss event in 2026, highlighting the paper toss and the seniors.',
   },
   {
     id: 'tbn-sf-show',
@@ -142,11 +168,16 @@ export const filmVideos = [
 ];
 
 export function normalizeFilmVideo(video, index) {
+  const youtubeEmbed = youtubeEmbedUrl(video.youtubeUrl);
+  const instagramPermalink = instagramPermalinkUrl(video.instagramUrl);
+  const googleDriveEmbed = googleDriveEmbedUrl(video.googleDriveUrl);
+
   return {
     ...video,
     id: video.id || `film-video-${index + 1}`,
     type: 'video',
-    embedUrl: youtubeEmbedUrl(video.youtubeUrl) || googleDriveEmbedUrl(video.googleDriveUrl),
+    embedUrl: youtubeEmbed || instagramPermalink || googleDriveEmbed,
+    embedProvider: youtubeEmbed ? 'youtube' : instagramPermalink ? 'instagram' : googleDriveEmbed ? 'google-drive' : '',
     meta: `V${String(index + 1).padStart(2, '0')}`,
     ratio: '16 / 9',
     span: 7,

@@ -108,43 +108,71 @@ function TopNav({ pathname }) {
   );
 }
 
+function InstagramWatchLink({ item }) {
+  return (
+    <a
+      className="media-placeholder__instagram-link"
+      href={item.embedUrl}
+      target="_blank"
+      rel="noreferrer"
+      aria-label={`Watch ${item.title} on Instagram (opens in a new tab)`}
+    >
+      <svg className="media-placeholder__instagram-arrow" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+        <path d="M8 40 40 8M19 8h21v21" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="square" strokeLinejoin="miter" />
+      </svg>
+      <span>Click to watch</span>
+    </a>
+  );
+}
+
 function MediaPlaceholder({ item, featured = false, loading = false }) {
-  const isVideo = item.type === 'video' && Boolean(item.embedUrl);
-  const isImage = !isVideo && Boolean(item.src);
-  const hasMedia = isImage || isVideo;
+  const isInstagram = item.type === 'video' && item.embedProvider === 'instagram' && Boolean(item.embedUrl);
+  const isVideo = item.type === 'video' && Boolean(item.embedUrl) && !isInstagram;
+  const isImage = !isVideo && !isInstagram && Boolean(item.src);
+  const hasMedia = isImage || isVideo || isInstagram;
   const [mediaState, setMediaState] = useState(hasMedia ? 'loading' : 'idle');
   const imageRef = useCallback((node) => {
     if (node?.complete && node.naturalWidth > 0) setMediaState('loaded');
   }, []);
+  const handleMediaLoad = useCallback(() => setMediaState('loaded'), []);
 
   const mediaFailed = mediaState === 'error';
   const showImage = isImage && !mediaFailed;
   const showVideo = isVideo && !mediaFailed;
+  const showInstagram = isInstagram && !mediaFailed;
   const mediaLoading = (showImage || showVideo) && mediaState === 'loading';
-  const showSkeleton = (loading && !mediaFailed) || mediaLoading;
-  const mediaClass = showImage ? ' media-placeholder--image' : showVideo ? ' media-placeholder--video' : '';
+  const showSkeleton = (loading && !mediaFailed && !isInstagram) || mediaLoading;
+  const mediaClass = showImage
+    ? ' media-placeholder--image'
+    : showVideo || showInstagram
+      ? ` media-placeholder--video${showInstagram ? ' media-placeholder--instagram' : ''}`
+      : '';
 
   return (
     <div
       className={`media-placeholder${featured ? ' media-placeholder--featured' : ''}${mediaClass}${showSkeleton ? ' media-placeholder--loading' : ''}`}
       style={{ '--block-color': item.color, '--block-ratio': item.ratio, '--block-span': item.span }}
       aria-busy={showSkeleton || undefined}
-      {...(showImage || showVideo ? {} : { role: 'img', 'aria-label': loading ? `${item.title} media loading` : `${item.title} placeholder; replace with Dennis's media` })}
+      {...(showImage || showVideo || showInstagram ? {} : { role: 'img', 'aria-label': loading ? `${item.title} media loading` : `${item.title} placeholder; replace with Dennis's media` })}
     >
-      {showVideo ? (
+      {showVideo || showInstagram ? (
         <>
-          <div className="media-placeholder__video-frame">
+          <div className={`media-placeholder__video-frame${showInstagram ? ' media-placeholder__instagram-frame' : ''}`}>
             {showSkeleton && <span className="media-placeholder__skeleton" aria-hidden="true" />}
-            <iframe
-              className={`media-placeholder__video${mediaLoading ? ' media-placeholder__video--loading' : ''}`}
-              src={item.embedUrl}
-              title={item.title}
-              loading={featured ? 'eager' : 'lazy'}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              referrerPolicy="strict-origin-when-cross-origin"
-              allowFullScreen
-              onLoad={() => setMediaState('loaded')}
-            />
+            {showInstagram ? (
+              <InstagramWatchLink item={item} />
+            ) : (
+              <iframe
+                className={`media-placeholder__video${mediaLoading ? ' media-placeholder__video--loading' : ''}`}
+                src={item.embedUrl}
+                title={item.title}
+                loading={featured ? 'eager' : 'lazy'}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerPolicy="strict-origin-when-cross-origin"
+                allowFullScreen
+                onLoad={handleMediaLoad}
+              />
+            )}
           </div>
           <div className="media-placeholder__video-info">
             <h3>{item.title}</h3>
