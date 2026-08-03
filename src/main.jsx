@@ -1,7 +1,8 @@
-import { StrictMode, useEffect, useState } from 'react';
+import { StrictMode, useCallback, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { fetchCloudinarySections, isCloudinaryConfigured, normalizeCloudinaryAsset } from './cloudinary';
 import { about, grandImage, mediaSections, site } from './data';
+import { filmVideos, normalizeFilmVideo } from './videoData';
 import './styles.css';
 
 function normalizePathname() {
@@ -48,8 +49,14 @@ function useCloudinaryMedia() {
 function withCloudinaryItems(section, assets) {
   return {
     ...section,
-    items: assets.map((asset, index) => normalizeCloudinaryAsset(asset, section, index, section.items[index % section.items.length])),
+    items: withFilmVideos(section, assets.map((asset, index) => normalizeCloudinaryAsset(asset, section, index, section.items[index % section.items.length]))),
   };
+}
+
+function withFilmVideos(section, items) {
+  return section.id === 'film'
+    ? [...filmVideos.map(normalizeFilmVideo), ...items]
+    : items;
 }
 
 function navHref(item, pathname) {
@@ -62,7 +69,7 @@ function TopNav({ pathname }) {
     <header className="top-nav">
       <a className="top-nav__brand" href="/" aria-label="Dennis Frenkel home">{site.name}</a>
       <span className="top-nav__meta">{site.location} / {site.year}</span>
-      <nav aria-label="Visual work sections" className="top-nav__links">
+      <nav aria-label="Media sections" className="top-nav__links">
         {site.nav.map((item) => (
           <a
             key={item.id}
@@ -78,43 +85,71 @@ function TopNav({ pathname }) {
 }
 
 function MediaPlaceholder({ item, featured = false, loading = false }) {
-  const isImage = Boolean(item.src);
-  const [imageState, setImageState] = useState(isImage ? 'loading' : 'idle');
+  const isVideo = item.type === 'video' && Boolean(item.embedUrl);
+  const isImage = !isVideo && Boolean(item.src);
+  const hasMedia = isImage || isVideo;
+  const [mediaState, setMediaState] = useState(hasMedia ? 'loading' : 'idle');
+  const imageRef = useCallback((node) => {
+    if (node?.complete && node.naturalWidth > 0) setMediaState('loaded');
+  }, []);
 
-  useEffect(() => {
-    setImageState(item.src ? 'loading' : 'idle');
-  }, [item.src]);
-
-  const imageFailed = imageState === 'error';
-  const showImage = isImage && !imageFailed;
-  const imageLoading = showImage && imageState === 'loading';
-  const showSkeleton = (loading && !imageFailed) || imageLoading;
+  const mediaFailed = mediaState === 'error';
+  const showImage = isImage && !mediaFailed;
+  const showVideo = isVideo && !mediaFailed;
+  const mediaLoading = (showImage || showVideo) && mediaState === 'loading';
+  const showSkeleton = (loading && !mediaFailed) || mediaLoading;
+  const mediaClass = showImage ? ' media-placeholder--image' : showVideo ? ' media-placeholder--video' : '';
 
   return (
     <div
-      className={`media-placeholder${featured ? ' media-placeholder--featured' : ''}${showImage ? ' media-placeholder--image' : ''}${showSkeleton ? ' media-placeholder--loading' : ''}`}
+      className={`media-placeholder${featured ? ' media-placeholder--featured' : ''}${mediaClass}${showSkeleton ? ' media-placeholder--loading' : ''}`}
       style={{ '--block-color': item.color, '--block-ratio': item.ratio, '--block-span': item.span }}
       aria-busy={showSkeleton || undefined}
-      {...(showImage ? {} : { role: 'img', 'aria-label': loading ? `${item.title} media loading` : `${item.title} placeholder; replace with Dennis's media` })}
+      {...(showImage || showVideo ? {} : { role: 'img', 'aria-label': loading ? `${item.title} media loading` : `${item.title} placeholder; replace with Dennis's media` })}
     >
-      {showSkeleton && <span className="media-placeholder__skeleton" aria-hidden="true" />}
-      {showImage ? (
-        <img
-          className={`media-placeholder__image${imageLoading ? ' media-placeholder__image--loading' : ''}`}
-          src={item.src}
-          alt={item.alt || item.title}
-          loading={featured ? 'eager' : 'lazy'}
-          decoding="async"
-          onLoad={() => setImageState('loaded')}
-          onError={() => setImageState('error')}
-        />
-      ) : (!loading || imageFailed) ? (
+      {showVideo ? (
         <>
-          <span className="media-placeholder__meta">{item.meta || item.section}</span>
-          <span className="media-placeholder__title">{item.title}</span>
-          <span className="media-placeholder__replace">{imageFailed ? 'Media unavailable' : 'Media placeholder'}</span>
+          <div className="media-placeholder__video-frame">
+            {showSkeleton && <span className="media-placeholder__skeleton" aria-hidden="true" />}
+            <iframe
+              className={`media-placeholder__video${mediaLoading ? ' media-placeholder__video--loading' : ''}`}
+              src={item.embedUrl}
+              title={item.title}
+              loading={featured ? 'eager' : 'lazy'}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              referrerPolicy="strict-origin-when-cross-origin"
+              allowFullScreen
+              onLoad={() => setMediaState('loaded')}
+            />
+          </div>
+          <div className="media-placeholder__video-info">
+            <h3>{item.title}</h3>
+            <p>{item.description}</p>
+          </div>
         </>
-      ) : null}
+      ) : (
+        <>
+          {showSkeleton && <span className="media-placeholder__skeleton" aria-hidden="true" />}
+          {showImage ? (
+            <img
+              className={`media-placeholder__image${mediaLoading ? ' media-placeholder__image--loading' : ''}`}
+              src={item.src}
+              alt={item.alt || item.title}
+              ref={imageRef}
+              loading={featured ? 'eager' : 'lazy'}
+              decoding="async"
+              onLoad={() => setMediaState('loaded')}
+              onError={() => setMediaState('error')}
+            />
+          ) : (!loading || mediaFailed) ? (
+            <>
+              <span className="media-placeholder__meta">{item.meta || item.section}</span>
+              <span className="media-placeholder__title">{item.title}</span>
+              <span className="media-placeholder__replace">{mediaFailed ? 'Media unavailable' : 'Media placeholder'}</span>
+            </>
+          ) : null}
+        </>
+      )}
     </div>
   );
 }
@@ -122,7 +157,7 @@ function MediaPlaceholder({ item, featured = false, loading = false }) {
 function Intro() {
   return (
     <section className="intro" aria-labelledby="intro-title">
-      <div className="intro__label">{site.year} / Visual work</div>
+      <div className="intro__label">{site.year} / Media portfilio</div>
       <h1 id="intro-title"><span>Dennis</span> Frenkel</h1>
       <p>{site.intro}</p>
     </section>
@@ -164,7 +199,7 @@ function MediaSection({ section, loading }) {
 
 function ArchivePage({ section, loading }) {
   return (
-    <main className="archive-page" id="main-content" aria-labelledby={`${section.id}-archive-title`}>
+    <main className={`archive-page archive-page--${section.id}`} id="main-content" aria-labelledby={`${section.id}-archive-title`}>
       <div className="section-heading archive-page__heading">
         <h1 id={`${section.id}-archive-title`}>{section.label}</h1>
         <span>{section.descriptor}</span>
@@ -220,7 +255,7 @@ function Footer() {
       </div>
       <SocialLinks />
       <div className="footer__bottom">
-        <span>Dennis Frenkel — Visual Work</span>
+        <span>Dennis Frenkel — Media Portfolio</span>
         <span>© {site.year} Dennis Frenkel</span>
       </div>
     </footer>
@@ -230,9 +265,13 @@ function Footer() {
 function App() {
   const pathname = usePathname();
   const cloudinaryMedia = useCloudinaryMedia();
+  const fallbackSections = mediaSections.map((section) => ({
+    ...section,
+    items: withFilmVideos(section, section.items),
+  }));
   const activeSections = cloudinaryMedia.status === 'ready'
     ? mediaSections.map((section) => withCloudinaryItems(section, cloudinaryMedia.sections[section.id] || []))
-    : mediaSections;
+    : fallbackSections;
   const grandImageAsset = cloudinaryMedia.status === 'ready' ? cloudinaryMedia.sections.grandImage?.[0] : null;
   const activeGrandImage = grandImageAsset
     ? normalizeCloudinaryAsset(grandImageAsset, grandImage, 0, grandImage)

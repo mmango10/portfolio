@@ -36,12 +36,26 @@ function fallbackName(publicId) {
   return publicId.split('/').pop()?.replace(/[-_]+/g, ' ') || 'Untitled image';
 }
 
+function spanForAspect(width, height, fallbackSpan = 6, fallbackRatio = '') {
+  let aspect = width > 0 && height > 0 ? width / height : 0;
+
+  if (!(aspect > 0) && fallbackRatio) {
+    const [fallbackWidth, fallbackHeight] = String(fallbackRatio).split('/').map(Number);
+    if (fallbackWidth > 0 && fallbackHeight > 0) aspect = fallbackWidth / fallbackHeight;
+  }
+
+  if (!(aspect > 0)) return fallbackSpan;
+  if (aspect < 0.9) return 4;
+  if (aspect > 1.25) return 8;
+  return 6;
+}
+
 export function cloudinaryImageUrl(asset) {
   if (!cloudName || !asset?.public_id) return '';
 
   const version = asset.version ? `v${asset.version}/` : '';
   const extension = asset.format ? `.${asset.format}` : '';
-  return `https://res.cloudinary.com/${cloudName}/image/upload/f_auto,q_auto,c_limit,w_1800/${version}${encodePublicId(asset.public_id)}${extension}`;
+  return `https://res.cloudinary.com/${cloudName}/image/upload/f_auto,q_auto,c_limit,w_1800,h_1800/${version}${encodePublicId(asset.public_id)}${extension}`;
 }
 
 export function normalizeCloudinaryAsset(asset, section, index, fallbackItem = {}) {
@@ -58,7 +72,7 @@ export function normalizeCloudinaryAsset(asset, section, index, fallbackItem = {
     description,
     meta: String(index + 1).padStart(2, '0'),
     ratio: width > 0 && height > 0 ? `${width} / ${height}` : fallbackItem.ratio || '4 / 3',
-    span: fallbackItem.span || 6,
+    span: spanForAspect(width, height, fallbackItem.span || 6, fallbackItem.ratio),
     color: fallbackItem.color || '#b8a18e',
     src: cloudinaryImageUrl(asset),
     alt: custom.alt || custom.Alt || description || `${title} — ${section.label}`,
