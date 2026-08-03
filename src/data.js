@@ -28,7 +28,7 @@ export const mediaSections = [
     id: 'life',
     label: 'Life',
     descriptor: 'Landscapes / roads / distance',
-    previewCount: 8,
+    previewCount: 4,
     items: [
       { id: 'coastline', title: 'Coastline', meta: '01', ratio: '1 / 1', span: 5, color: '#b8a18e' },
       { id: 'desert-road', title: 'Desert road', meta: '02', ratio: '16 / 10', span: 7, color: '#c5b99d' },
