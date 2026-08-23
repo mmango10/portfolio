@@ -494,7 +494,7 @@ function Footer() {
       </div>
       <SocialLinks />
       <div className="footer__bottom">
-        <span>Dennis Frenkel — Media Portfolio</span>
+        <span>Built on Cloudflare, images served by Cloudinary</span>
         <span>© {site.year} Dennis Frenkel</span>
       </div>
     </footer>
