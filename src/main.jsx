@@ -1,7 +1,12 @@
 import { StrictMode, useCallback, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { fetchCloudinarySections, isCloudinaryConfigured, normalizeCloudinaryAsset } from './cloudinary';
-import { about, grandImage, mediaSections, site } from './data';
+import {
+  fetchCloudinaryCollections,
+  fetchCloudinarySections,
+  isCloudinaryConfigured,
+  normalizeCloudinaryAsset,
+} from './cloudinary';
+import { about, collectionDefinitions, filmArchive, grandImage, site } from './data';
 import { filmVideos, normalizeFilmVideo } from './videoData';
 import './styles.css';
 
@@ -11,6 +16,17 @@ const GRAND_IMAGE_FADE_MS = 280;
 
 function normalizePathname() {
   return window.location.pathname.replace(/\/+$/, '') || '/';
+}
+
+function collectionIdFromPath(pathname) {
+  const match = pathname.match(/^\/collections\/([^/]+)$/);
+  if (!match) return null;
+
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return match[1];
+  }
 }
 
 function usePathname() {
@@ -29,18 +45,22 @@ function useCloudinaryMedia() {
   const [state, setState] = useState({
     status: isCloudinaryConfigured() ? 'loading' : 'disabled',
     sections: null,
+    collections: [],
   });
 
   useEffect(() => {
     if (!isCloudinaryConfigured()) return undefined;
 
     const controller = new AbortController();
-    fetchCloudinarySections(controller.signal)
-      .then((sections) => setState({ status: 'ready', sections }))
+    Promise.all([
+      fetchCloudinarySections(controller.signal),
+      fetchCloudinaryCollections(collectionDefinitions, controller.signal),
+    ])
+      .then(([sections, collections]) => setState({ status: 'ready', sections, collections }))
       .catch((error) => {
         if (error.name !== 'AbortError') {
           console.warn('Cloudinary media list unavailable; showing local placeholders.', error);
-          setState({ status: 'error', sections: null });
+          setState({ status: 'error', sections: null, collections: [] });
         }
       });
 
@@ -51,17 +71,19 @@ function useCloudinaryMedia() {
 }
 
 function withCloudinaryItems(section, assets) {
+  const fallbackItems = section.items?.length ? section.items : [section];
+
   return {
     ...section,
-    items: withFilmVideos(section, assets.map((asset, index) => normalizeCloudinaryAsset(asset, section, index, section.items[index % section.items.length]))),
+    items: assets.map((asset, index) => normalizeCloudinaryAsset(asset, section, index, fallbackItems[index % fallbackItems.length])),
   };
 }
 
-function withFilmVideos(section, items) {
-  return section.id === 'film'
-    ? [...filmVideos.map(normalizeFilmVideo), ...items]
-    : items;
+function videoCollectionItems() {
+  return filmVideos.map(normalizeFilmVideo);
 }
+
+const filmCollection = { ...filmArchive, items: videoCollectionItems() };
 
 function usePrefersReducedMotion() {
   const [reducedMotion, setReducedMotion] = useState(() => (
@@ -84,6 +106,9 @@ function usePrefersReducedMotion() {
 }
 
 function navHref(item, pathname) {
+  if (item.id === 'home') return '/';
+  if (item.id === 'collections') return '/collections';
+  if (item.id === 'film') return '/film';
   if (item.id === about.id) return pathname === '/' ? '#about' : '/#about';
   return `/${item.id}`;
 }
@@ -93,12 +118,18 @@ function TopNav({ pathname }) {
     <header className="top-nav">
       <a className="top-nav__brand" href="/" aria-label="Dennis Frenkel home">{site.name}</a>
       <span className="top-nav__meta">{site.location} / {site.year}</span>
-      <nav aria-label="Media sections" className="top-nav__links">
+      <nav aria-label="Portfolio sections" className="top-nav__links">
         {site.nav.map((item) => (
           <a
             key={item.id}
             href={navHref(item, pathname)}
-            aria-current={pathname === `/${item.id}` ? 'page' : undefined}
+            aria-current={
+              (item.id === 'collections' && pathname.startsWith('/collections'))
+              || (item.id === 'film' && (pathname === '/film' || pathname === '/video'))
+              || (item.id === 'home' && pathname === '/')
+                ? 'page'
+                : undefined
+            }
           >
             {item.label}
           </a>
@@ -209,7 +240,7 @@ function MediaPlaceholder({ item, featured = false, loading = false }) {
 function Intro() {
   return (
     <section className="intro" aria-labelledby="intro-title">
-      <div className="intro__label">{site.year} / Media portfilio</div>
+    <div className="intro__label">{site.year} / Media portfolio</div>
       <h1 id="intro-title"><span>Dennis</span> Frenkel</h1>
       <p>{site.intro}</p>
     </section>
@@ -291,44 +322,127 @@ function GrandImage({ items, loading }) {
   );
 }
 
-function MediaSection({ section, loading }) {
-  const previewItems = section.items.slice(0, section.previewCount ?? section.items.length);
+function CollectionTile({ collection, loading, showCount = false }) {
+  const cover = collection.type === 'videos' ? null : collection.items[0];
+  const tileText = collection.tileText === 'dark' ? ' collection-tile--dark' : ' collection-tile--light';
+  const tileNoWrap = collection.tileNoWrap ? ' collection-tile--nowrap' : '';
+  const emptyLabel = collection.type === 'videos'
+    ? 'Video archive'
+    : loading
+      ? 'Loading'
+      : 'No image yet';
+  const countLabel = collection.type === 'videos'
+    ? `${collection.items.length} videos`
+    : `${collection.items.length} ${collection.items.length === 1 ? 'image' : 'images'}`;
 
   return (
-    <section className="media-section" id={section.id} aria-labelledby={`${section.id}-title`}>
-      <div className="section-heading">
-        <a
-          className="section-heading__link"
-          href={`/${section.id}`}
-          aria-label={`Open ${section.label} archive`}
-        >
-          <h2 id={`${section.id}-title`}>{section.label}</h2>
-          <svg className="section-heading__arrow" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+    <a
+      className={`collection-tile${tileText}${tileNoWrap}`}
+      href={`/collections/${encodeURIComponent(collection.id)}`}
+      aria-label={`Open ${collection.label} collection`}
+    >
+      <div className="collection-tile__media">
+        {cover?.src ? (
+          <img src={cover.src} alt="" loading="lazy" decoding="async" />
+        ) : loading ? (
+          <span className="collection-tile__skeleton" aria-hidden="true" />
+        ) : (
+          <span className="collection-tile__empty">{emptyLabel}</span>
+        )}
+      </div>
+      <div className="collection-tile__overlay">
+        <h3>{collection.label}</h3>
+        <span>{collection.descriptor}{showCount ? ` / ${countLabel}` : ''}</span>
+      </div>
+    </a>
+  );
+}
+
+function FeaturedCollections({ collections, loading }) {
+  const featuredCollections = collections.filter((collection) => collection.featured).slice(0, 3);
+
+  return (
+    <section className="featured-collections" id="collections" aria-labelledby="featured-collections-title">
+      <div className="section-heading featured-collections__heading">
+        <a className="featured-collections__heading-link" href="/collections" aria-label="Open Collections page">
+          <h2 id="featured-collections-title">Collections</h2>
+          <svg className="featured-collections__arrow" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
             <path d="M8 40 40 8M19 8h21v21" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="square" strokeLinejoin="miter" />
           </svg>
         </a>
-        <span>{section.descriptor}</span>
+        <span>Selected work</span>
       </div>
-      <div className="media-grid">
-        {previewItems.map((item) => <MediaPlaceholder item={item} loading={loading} key={item.id} />)}
+      <div className="collection-tiles">
+        {featuredCollections.map((collection) => (
+          <CollectionTile collection={collection} loading={loading} key={collection.id} />
+        ))}
       </div>
     </section>
   );
 }
 
-function ArchivePage({ section, loading }) {
-  const archiveItems = section.id === 'film'
-    ? section.items.filter((item) => item.type === 'video' || Boolean(item.src))
-    : section.items;
+function CollectionsPage({ collections, loading }) {
+  return (
+    <main className="archive-page collections-page" id="main-content" aria-labelledby="collections-title">
+      <div className="section-heading archive-page__heading collections-page__heading">
+        <h1 id="collections-title">Collections</h1>
+        <span>Trips / events / stories</span>
+      </div>
+      {collections.length > 0 ? (
+        <div className="collection-tiles collection-tiles--archive">
+          {collections.map((collection) => (
+            <CollectionTile collection={collection} loading={loading} showCount key={collection.id} />
+          ))}
+        </div>
+      ) : (
+        <p className="collections-page__empty">
+          {loading ? 'Loading collections…' : 'No collections yet.'}
+        </p>
+      )}
+    </main>
+  );
+}
+
+function CollectionDetailPage({ collection, loading, backHref = '/collections', backLabel = 'Collections' }) {
+  if (!collection) {
+    return (
+      <main className="archive-page collection-detail" id="main-content" aria-labelledby="collection-not-found-title">
+        <div className="section-heading archive-page__heading">
+          <h1 id="collection-not-found-title">Collection not found</h1>
+          <a className="collection-detail__back" href={backHref}>{backLabel}</a>
+        </div>
+      </main>
+    );
+  }
 
   return (
-    <main className={`archive-page archive-page--${section.id}`} id="main-content" aria-labelledby={`${section.id}-archive-title`}>
-      <div className="section-heading archive-page__heading">
-        <h1 id={`${section.id}-archive-title`}>{section.label}</h1>
-        <span>{section.descriptor}</span>
+    <main className={`archive-page collection-detail${collection.type ? ` collection-detail--${collection.type}` : ''}`} id="main-content" aria-labelledby={`${collection.id}-title`}>
+      <div className="section-heading archive-page__heading collection-detail__heading">
+        <div>
+          <a className="collection-detail__back" href={backHref}>{backLabel}</a>
+          <h1 id={`${collection.id}-title`}>{collection.label}</h1>
+        </div>
+        <span>{collection.descriptor || collection.tag}</span>
       </div>
-      <div className="media-grid archive-page__grid">
-        {archiveItems.map((item) => <MediaPlaceholder item={item} loading={loading} key={item.id} />)}
+      {collection.items.length > 0 ? (
+        <div className="media-grid archive-page__grid">
+          {collection.items.map((item) => <MediaPlaceholder item={item} loading={loading} key={item.id} />)}
+        </div>
+      ) : (
+        <p className="collections-page__empty">
+          {loading ? 'Loading collection…' : 'No media in this collection yet.'}
+        </p>
+      )}
+    </main>
+  );
+}
+
+function NotFoundPage() {
+  return (
+    <main className="archive-page" id="main-content" aria-labelledby="not-found-title">
+      <div className="section-heading archive-page__heading">
+        <h1 id="not-found-title">Page not found</h1>
+        <a className="collection-detail__back" href="/">Back home</a>
       </div>
     </main>
   );
@@ -390,42 +504,69 @@ function Footer() {
 function App() {
   const pathname = usePathname();
   const cloudinaryMedia = useCloudinaryMedia();
-  const fallbackSections = mediaSections.map((section) => ({
-    ...section,
-    items: withFilmVideos(section, section.items),
-  }));
-  const activeSections = cloudinaryMedia.status === 'ready'
-    ? mediaSections.map((section) => {
-      const assets = cloudinaryMedia.sections[section.id];
-      if (Array.isArray(assets)) return withCloudinaryItems(section, assets);
-      return fallbackSections.find((fallbackSection) => fallbackSection.id === section.id);
-    })
-    : fallbackSections;
+  const activeCollections = collectionDefinitions.map((definition) => {
+    const collectionResult = cloudinaryMedia.collections?.find((collection) => collection.id === definition.id);
+    const section = {
+      ...definition,
+      items: [],
+      previewCount: definition.previewCount || 4,
+    };
+
+    return Array.isArray(collectionResult?.assets)
+      ? withCloudinaryItems(section, collectionResult.assets)
+      : section;
+  });
   const grandImageAssets = cloudinaryMedia.status === 'ready' ? cloudinaryMedia.sections.grandImage : null;
   const grandImageItems = Array.isArray(grandImageAssets) && grandImageAssets.length > 0
     ? grandImageAssets.map((asset, index) => normalizeCloudinaryAsset(asset, grandImage, index, grandImage))
     : [grandImage];
   const mediaLoading = cloudinaryMedia.status === 'loading';
-  const archiveSection = activeSections.find((section) => pathname === `/${section.id}`);
+  const isFilmPage = pathname === '/film' || pathname === '/video';
+  const collectionId = collectionIdFromPath(pathname);
+  const collectionDetail = collectionId ? activeCollections.find((collection) => collection.id === collectionId) : null;
+  const isCollectionsIndex = pathname === '/collections';
+  const isCollectionDetail = pathname.startsWith('/collections/');
+  const isHome = pathname === '/';
 
   useEffect(() => {
-    document.title = archiveSection ? `${archiveSection.label} — Dennis Frenkel` : 'Dennis Frenkel';
-  }, [archiveSection]);
+    if (isCollectionsIndex) {
+      document.title = 'Collections — Dennis Frenkel';
+    } else if (isFilmPage) {
+      document.title = `${filmCollection.label} — Dennis Frenkel`;
+    } else if (isCollectionDetail && collectionDetail) {
+      document.title = `${collectionDetail.label} — Dennis Frenkel`;
+    } else if (isCollectionDetail) {
+      document.title = 'Collection — Dennis Frenkel';
+    } else {
+      document.title = 'Dennis Frenkel';
+    }
+  }, [collectionDetail, isCollectionDetail, isCollectionsIndex, isFilmPage]);
+
+  let page;
+  if (isCollectionsIndex) {
+    page = <CollectionsPage collections={activeCollections} loading={mediaLoading} />;
+  } else if (isFilmPage) {
+    page = <CollectionDetailPage collection={filmCollection} loading={mediaLoading} backHref="/" backLabel="Home" />;
+  } else if (isCollectionDetail) {
+    page = <CollectionDetailPage collection={collectionDetail} loading={mediaLoading} />;
+  } else if (isHome) {
+    page = (
+      <main id="main-content">
+        <Intro />
+        <GrandImage items={grandImageItems} loading={mediaLoading} />
+        <FeaturedCollections collections={activeCollections} loading={mediaLoading} />
+        <AboutSection />
+      </main>
+    );
+  } else {
+    page = <NotFoundPage />;
+  }
 
   return (
     <div className="app-shell" id="top">
       <a className="skip-link" href="#main-content">Skip to content</a>
       <TopNav pathname={pathname} />
-      {archiveSection ? (
-        <ArchivePage section={archiveSection} loading={mediaLoading} />
-      ) : (
-        <main id="main-content">
-          <Intro />
-          <GrandImage items={grandImageItems} loading={mediaLoading} />
-          {activeSections.map((section) => <MediaSection section={section} loading={mediaLoading} key={section.id} />)}
-          <AboutSection />
-        </main>
-      )}
+      {page}
       <Footer />
     </div>
   );

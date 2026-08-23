@@ -4,8 +4,8 @@ export const site = {
   location: 'Palo Alto, CA',
   intro: 'Photography, videography, cinematography, and editing.',
   nav: [
-    { id: 'sports', label: 'Sports' },
-    { id: 'life', label: 'Life' },
+    { id: 'home', label: 'Home' },
+    { id: 'collections', label: 'Collections' },
     { id: 'film', label: 'Film' },
     { id: 'about', label: 'About' },
   ],
@@ -26,72 +26,24 @@ export const grandImage = {
   color: '#b8a18e',
 };
 
-export const mediaSections = [
-  {
-    id: 'life',
-    label: 'Life',
-    descriptor: 'Landscapes / cars / architecture',
-    previewCount: 4,
-    items: [
-      { id: 'placeholder-01', title: 'Placeholder-01', meta: '01', ratio: '1 / 1', span: 5, color: '#b8a18e' },
-      { id: 'placeholder-02', title: 'Placeholder-02', meta: '02', ratio: '16 / 10', span: 7, color: '#c5b99d' },
-      { id: 'placeholder-03', title: 'Placeholder-03', meta: '03', ratio: '4 / 5', span: 4, color: '#9fa9a2' },
-      { id: 'placeholder-04', title: 'Placeholder-04', meta: '04', ratio: '16 / 10', span: 8, color: '#a4adb1' },
-      { id: 'placeholder-05', title: 'Placeholder-05', meta: '05', ratio: '16 / 10', span: 7, color: '#a89d82' },
-      { id: 'placeholder-06', title: 'Placeholder-06', meta: '06', ratio: '4 / 5', span: 5, color: '#9ca3a6' },
-      { id: 'placeholder-07', title: 'Placeholder-07', meta: '07', ratio: '1 / 1', span: 5, color: '#b6a18d' },
-      { id: 'placeholder-08', title: 'Placeholder-08', meta: '08', ratio: '16 / 10', span: 7, color: '#a29aa6' },
-      { id: 'placeholder-09', title: 'Placeholder-09', meta: '09', ratio: '3 / 2', span: 7, color: '#b2a28f' },
-      { id: 'placeholder-10', title: 'Placeholder-10', meta: '10', ratio: '4 / 5', span: 5, color: '#9da6a5' },
-      { id: 'placeholder-11', title: 'Placeholder-11', meta: '11', ratio: '1 / 1', span: 4, color: '#a9a0a4' },
-      { id: 'placeholder-12', title: 'Placeholder-12', meta: '12', ratio: '16 / 10', span: 8, color: '#b6aa92' },
-      { id: 'placeholder-13', title: 'Placeholder-13', meta: '13', ratio: '4 / 5', span: 5, color: '#9ea9ad' },
-      { id: 'placeholder-14', title: 'Placeholder-14', meta: '14', ratio: '1 / 1', span: 4, color: '#a79482' },
-      { id: 'placeholder-15', title: 'Placeholder-15', meta: '15', ratio: '16 / 10', span: 8, color: '#a69b91' },
-      { id: 'placeholder-16', title: 'Placeholder-16', meta: '16', ratio: '4 / 5', span: 5, color: '#a1a5ab' },
-    ],
-  },
-  {
-    id: 'sports',
-    label: 'Sports',
-    descriptor: 'Timing / movement / stills',
-    previewCount: 4,
-    items: [
-      { id: 'placeholder-01', title: 'Placeholder-01', meta: '01', ratio: '4 / 5', span: 4, color: '#8e9aa0' },
-      { id: 'placeholder-02', title: 'Placeholder-02', meta: '02', ratio: '16 / 10', span: 8, color: '#9da58e' },
-      { id: 'placeholder-03', title: 'Placeholder-03', meta: '03', ratio: '1 / 1', span: 6, color: '#b0a2a0' },
-      { id: 'placeholder-04', title: 'Placeholder-04', meta: '04', ratio: '4 / 5', span: 6, color: '#a3a8b2' },
-      { id: 'placeholder-05', title: 'Placeholder-05', meta: '05', ratio: '3 / 2', span: 7, color: '#9fa79f' },
-      { id: 'placeholder-06', title: 'Placeholder-06', meta: '06', ratio: '4 / 5', span: 5, color: '#af9da0' },
-      { id: 'placeholder-07', title: 'Placeholder-07', meta: '07', ratio: '16 / 10', span: 8, color: '#9ba8af' },
-      { id: 'placeholder-08', title: 'Placeholder-08', meta: '08', ratio: '1 / 1', span: 4, color: '#a5a194' },
-      { id: 'placeholder-09', title: 'Placeholder-09', meta: '09', ratio: '4 / 5', span: 5, color: '#9d98a4' },
-      { id: 'placeholder-10', title: 'Placeholder-10', meta: '10', ratio: '16 / 10', span: 7, color: '#b0a68d' },
-      { id: 'placeholder-11', title: 'Placeholder-11', meta: '11', ratio: '1 / 1', span: 4, color: '#a09fa4' },
-      { id: 'placeholder-12', title: 'Placeholder-12', meta: '12', ratio: '4 / 5', span: 5, color: '#9aa8a1' },
-    ],
-  },
-  {
-    id: 'film',
-    label: 'Film/video',
-    descriptor: 'Events / broadcast / documentary',
-    previewCount: 4,
-    items: [
-      { id: 'placeholder-01', title: 'Placeholder-01', meta: '01', ratio: '4 / 5', span: 5, color: '#9b8698' },
-      { id: 'placeholder-02', title: 'Placeholder-02', meta: '02', ratio: '16 / 10', span: 7, color: '#9c9a82' },
-      { id: 'placeholder-03', title: 'Placeholder-03', meta: '03', ratio: '16 / 10', span: 8, color: '#9ca6ae' },
-      { id: 'placeholder-04', title: 'Placeholder-04', meta: '04', ratio: '4 / 5', span: 4, color: '#a98f82' },
-      { id: 'placeholder-05', title: 'Placeholder-05', meta: '05', ratio: '16 / 10', span: 8, color: '#989da4' },
-      { id: 'placeholder-06', title: 'Placeholder-06', meta: '06', ratio: '4 / 5', span: 4, color: '#a38f86' },
-      { id: 'placeholder-07', title: 'Placeholder-07', meta: '07', ratio: '1 / 1', span: 5, color: '#a0a9a8' },
-      { id: 'placeholder-08', title: 'Placeholder-08', meta: '08', ratio: '16 / 10', span: 7, color: '#ad9c8b' },
-      { id: 'placeholder-09', title: 'Placeholder-09', meta: '09', ratio: '4 / 5', span: 5, color: '#998c9c' },
-      { id: 'placeholder-10', title: 'Placeholder-10', meta: '10', ratio: '1 / 1', span: 4, color: '#a4a3a0' },
-      { id: 'placeholder-11', title: 'Placeholder-11', meta: '11', ratio: '16 / 10', span: 8, color: '#9da4ac' },
-      { id: 'placeholder-12', title: 'Placeholder-12', meta: '12', ratio: '4 / 5', span: 4, color: '#a78e84' },
-    ],
-  },
+// Collections are intentionally registered in code. Add one definition when a
+// new Cloudinary tag is ready, then redeploy; photos can still be added/removed
+// inside that tag without another code edit.
+//
+export const collectionDefinitions = [
+  { id: 'tahoe-trip', label: "Tahoe '24", tag: 'collection-tahoe_trip', descriptor: 'Travel / Tahoe', featured: true, tileText: 'light' },
+  { id: 'france-trip', label: "France '26", tag: 'collection-france_trip', descriptor: 'Travel / France', featured: true, tileText: 'dark' },
+  { id: 'germany-trip', label: "Germany '25", tag: 'collection-germany_trip', descriptor: 'Travel / Germany', featured: true, tileText: 'light', tileNoWrap: true },
+  { id: 'san-diego-trip-2026', label: "San Diego '26", tag: 'collection-san_diego_trip_2026', descriptor: 'Travel / San Diego', tileNoWrap: true },
+  { id: 'vchs-hockey-game-1', label: 'VCHS Ice Hockey', tag: 'collection-vchs_hockey_game_1', descriptor: 'Sports / hockey' },
 ];
+
+export const filmArchive = {
+  id: 'film',
+  label: 'Film',
+  type: 'videos',
+  descriptor: 'Events / broadcast / documentary',
+};
 
 export const about = {
   id: 'about',

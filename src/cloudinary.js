@@ -3,9 +3,6 @@ const cloudName = String(import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || '').trim(
 export const cloudinaryConfig = {
   cloudName,
   tags: {
-    life: 'life',
-    sports: 'sports',
-    film: 'film',
     grandImage: 'grand_image',
   },
 };
@@ -103,21 +100,51 @@ async function fetchTag(tag, signal) {
   return Array.isArray(payload.resources) ? shuffleAssets(payload.resources) : [];
 }
 
-export async function fetchCloudinarySections(signal) {
-  const sectionEntries = await Promise.all(
-    Object.entries(cloudinaryConfig.tags).map(async ([sectionId, tag]) => {
+async function fetchTagGroup(tags, signal) {
+  const tagResults = await Promise.all(
+    tags.filter(Boolean).map(async (tag) => {
       try {
-        return [sectionId, await fetchTag(tag, signal)];
+        return await fetchTag(tag, signal);
       } catch (error) {
         if (error.name === 'AbortError') throw error;
-
-        // Cloudinary returns 404 when a tag has no resources. Keep each
-        // gallery independent so one empty tag cannot hide other galleries.
-        console.warn(`Cloudinary tag "${tag}" unavailable; using its local fallback.`, error);
-        return [sectionId, null];
+        console.warn(`Cloudinary tag "${tag}" unavailable; continuing with the other media tags.`, error);
+        return null;
       }
     }),
   );
 
+  // A null result means every request failed. An empty array means the tag
+  // endpoint responded successfully but currently has no matching assets.
+  if (!tagResults.some((result) => Array.isArray(result))) return null;
+
+  const seen = new Set();
+  return shuffleAssets(tagResults.flatMap((result) => result || []).filter((asset) => {
+    const key = asset.asset_id || asset.public_id;
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }));
+}
+
+export async function fetchCloudinarySections(signal) {
+  const sectionEntries = await Promise.all(
+    Object.entries(cloudinaryConfig.tags).map(async ([sectionId, configuredTags]) => {
+      const tags = Array.isArray(configuredTags) ? configuredTags : [configuredTags];
+      return [sectionId, await fetchTagGroup(tags, signal)];
+    }),
+  );
+
   return Object.fromEntries(sectionEntries);
+}
+
+export async function fetchCloudinaryCollections(collections, signal) {
+  return Promise.all((collections || []).map(async (collection) => {
+    try {
+      return { ...collection, assets: await fetchTag(collection.tag, signal) };
+    } catch (error) {
+      if (error.name === 'AbortError') throw error;
+      console.warn(`Cloudinary collection tag "${collection.tag}" unavailable.`, error);
+      return { ...collection, assets: null };
+    }
+  }));
 }
