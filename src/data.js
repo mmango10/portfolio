@@ -12,6 +12,7 @@ export const site = {
   socials: [
     { id: 'instagram', label: 'Instagram', shortLabel: 'IG', href: 'https://www.instagram.com/_dennisfrenkel' },
     { id: 'cal', label: 'Cal.com', shortLabel: 'CAL', href: 'https://cal.com/frenkel' },
+    { id: 'email', label: 'Email', shortLabel: 'MAIL', href: 'mailto:dennis@dennisfrenkel.com' },
   ],
 };
 
@@ -31,10 +32,10 @@ export const grandImage = {
 // inside that tag without another code edit.
 //
 export const collectionDefinitions = [
-  { id: 'tahoe-trip', label: "Tahoe '24", tag: 'collection-tahoe_trip', descriptor: 'Travel / Tahoe', featured: true, tileText: 'light' },
-  { id: 'france-trip', label: "France '26", tag: 'collection-france_trip', descriptor: 'Travel / France', featured: true, tileText: 'dark' },
-  { id: 'germany-trip', label: "Germany '25", tag: 'collection-germany_trip', descriptor: 'Travel / Germany', featured: true, tileText: 'light', tileNoWrap: true },
-  { id: 'san-diego-trip-2026', label: "San Diego '26", tag: 'collection-san_diego_trip_2026', descriptor: 'Travel / San Diego', tileNoWrap: true },
+  { id: 'tahoe-trip', label: "Tahoe", tag: 'collection-tahoe_trip', descriptor: 'Travel / Tahoe', featured: true, tileText: 'light' },
+  { id: 'france-trip', label: "France", tag: 'collection-france_trip', descriptor: 'Travel / France', featured: true, tileText: 'dark' },
+  { id: 'germany-trip', label: "Germany", tag: 'collection-germany_trip', descriptor: 'Travel / Germany', featured: true, tileText: 'light', tileNoWrap: true },
+  { id: 'san-diego-trip-2026', label: "San Diego", tag: 'collection-san_diego_trip_2026', descriptor: 'Travel / San Diego', tileNoWrap: true },
   { id: 'vchs-hockey-game-1', label: 'VCHS Ice Hockey', tag: 'collection-vchs_hockey_game_1', descriptor: 'Sports / hockey' },
 ];
 

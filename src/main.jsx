@@ -370,7 +370,7 @@ function FeaturedCollections({ collections, loading }) {
             <path d="M8 40 40 8M19 8h21v21" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="square" strokeLinejoin="miter" />
           </svg>
         </a>
-        <span>Selected work</span>
+        <span>Featured work</span>
       </div>
       <div className="collection-tiles">
         {featuredCollections.map((collection) => (
