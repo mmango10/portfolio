@@ -177,6 +177,15 @@ main, .footer { width: min(100%, var(--max)); margin: 0 auto; }
 .archive-page { padding: clamp(3rem, 6vw, 6rem) var(--gutter) clamp(4rem, 7vw, 7rem); }
 .archive-page__heading { margin-bottom: clamp(1.5rem, 3vw, 3rem); }
 .archive-page__grid { width: 100%; }
+.not-found-page { display: grid; min-height: min(74vh, 52rem); align-items: center; }
+.not-found-page__heading { display: grid; grid-template-columns: minmax(0, 1fr) minmax(16rem, 0.7fr); align-items: end; gap: clamp(2rem, 8vw, 9rem); border-top: 1px solid var(--line); padding-top: 0.8rem; }
+.not-found-page__code { color: transparent; font-size: clamp(9rem, 27vw, 30rem); font-weight: 700; letter-spacing: -0.14em; line-height: 0.68; -webkit-text-stroke: 1px var(--ink); }
+.not-found-page__copy { max-width: 28rem; padding-bottom: 0.35rem; }
+.not-found-page__eyebrow { display: block; margin-bottom: 1.2rem; color: var(--muted); font: 0.64rem var(--mono); letter-spacing: 0.08em; text-transform: uppercase; }
+.not-found-page__copy h1 { max-width: 8ch; margin: 0; font-size: clamp(3.6rem, 7vw, 7.5rem); font-weight: 700; letter-spacing: -0.1em; line-height: 0.78; }
+.not-found-page__copy p { max-width: 19rem; margin: 2rem 0 2.4rem; color: var(--muted); font-size: 0.92rem; line-height: 1.4; }
+.not-found-page__home { display: inline-flex; align-items: center; gap: 1rem; border-bottom: 1px solid var(--ink); padding-bottom: 0.45rem; font: 0.68rem var(--mono); letter-spacing: 0.08em; text-transform: uppercase; transition: gap 180ms var(--ease), color 180ms ease; }
+.not-found-page__home:hover, .not-found-page__home:focus-visible { gap: 1.4rem; color: var(--muted); }
 .collection-detail--videos .media-placeholder--video { grid-column: span 6; }
 
 .collections-page__heading h1 { margin: 0; font-size: clamp(2.7rem, 7vw, 7.8rem); font-weight: 700; letter-spacing: -0.09em; line-height: 0.8; }
@@ -226,6 +235,10 @@ main, .footer { width: min(100%, var(--max)); margin: 0 auto; }
   .featured-collections, .about-section, .featured-gallery { padding-bottom: 5rem; }
   .section-heading { grid-template-columns: 1fr; gap: 0.7rem; }
   .section-heading h2, .archive-page__heading h1, .collections-page__heading h1 { font-size: clamp(3.2rem, 17vw, 5.8rem); }
+  .not-found-page { min-height: 70vh; }
+  .not-found-page__heading { grid-template-columns: 1fr; gap: 2.5rem; }
+  .not-found-page__code { font-size: clamp(9rem, 42vw, 16rem); line-height: 0.58; }
+  .not-found-page__copy h1 { font-size: clamp(3.4rem, 16vw, 5.8rem); }
   .section-heading span { justify-self: start; text-align: left; }
   .media-placeholder { min-height: 15rem; }
   .media-placeholder--video { min-height: 0; }

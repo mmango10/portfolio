@@ -439,10 +439,18 @@ function CollectionDetailPage({ collection, loading, backHref = '/collections', 
 
 function NotFoundPage() {
   return (
-    <main className="archive-page" id="main-content" aria-labelledby="not-found-title">
-      <div className="section-heading archive-page__heading">
-        <h1 id="not-found-title">Page not found</h1>
-        <a className="collection-detail__back" href="/">Back home</a>
+    <main className="archive-page not-found-page" id="main-content" aria-labelledby="not-found-title">
+      <div className="not-found-page__heading">
+        <span className="not-found-page__code" aria-hidden="true">404</span>
+        <div className="not-found-page__copy">
+          <span className="not-found-page__eyebrow">ERR - FILE CORRUPTED / 00:00:00</span>
+          <h1 id="not-found-title">Page not found.</h1>
+          <p>This frame wandered off before I could develop it.</p>
+          <a className="not-found-page__home" href="/">
+            <span>Return to home</span>
+            <span aria-hidden="true">↗</span>
+          </a>
+        </div>
       </div>
     </main>
   );
