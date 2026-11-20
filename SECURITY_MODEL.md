@@ -22,7 +22,7 @@ Hosting and response headers (CSP, HSTS, framing) are not in the repo; no infras
 - **Visitor → site:** anyone on the internet; the only input is the URL path (and the `popstate` history). No accounts exist.
 - **Cloudinary → site:** list JSON is fetched unauthenticated and rendered through React (auto-escaped text and attribute values). Whoever can upload or edit assets/metadata in the Cloudinary account controls this content.
 - **Third-party embeds:** YouTube/Drive iframes with an `allow` list and `strict-origin-when-cross-origin` referrer; Instagram opens in a new tab with `rel="noreferrer"`. URLs come from source code, not runtime input.
-- **Build/supply chain:** `package.json` pins every dependency to `"latest"`, and the `package-lock.json` root does not match it, so installs can re-resolve versions; Dependabot opens daily update PRs with a 7-day cooldown; PRs are merged by the owner.
+- **Build/supply chain:** `package.json` pins every dependency to an exact version that matches `package-lock.json` (which records sha512 integrity hashes); builds should use `npm ci`; Dependabot opens daily update PRs with a 7-day cooldown; PRs are merged by the owner.
 
 ## Assets
 - Site integrity and the owner's reputation (no injected script, defacement or redirects to malicious sites).
@@ -37,7 +37,8 @@ Hosting and response headers (CSP, HSTS, framing) are not in the repo; no infras
 ## Existing controls
 - React escaping for all rendered strings; no `dangerouslySetInnerHTML`.
 - Embed URLs rebuilt from parsed IDs with `encodeURIComponent` and fixed hostnames; Cloudinary `public_id` segments are URL-encoded.
-- Dependabot version updates with a 7-day cooldown (they do not cover builds that resolve `latest` on their own).
+- Exact dependency versions with a matching lockfile; `npm ci` installs only what the lockfile records and checks its hashes.
+- Dependabot version updates with a 7-day cooldown.
 - Public-only Cloudinary configuration (`VITE_` variables documented as never holding secrets).
 
 ## Out of scope / accepted risk
