@@ -191,6 +191,12 @@ main, .footer { width: min(100%, var(--max)); margin: 0 auto; }
 .collections-page__heading h1 { margin: 0; font-size: clamp(2.7rem, 7vw, 7.8rem); font-weight: 700; letter-spacing: -0.09em; line-height: 0.8; }
 .collection-detail__back { color: var(--muted); font: 0.64rem var(--mono); letter-spacing: 0.06em; line-height: 1.2; text-transform: uppercase; }
 .collections-page__empty { min-height: 8rem; margin: 0; color: var(--muted); font: 0.72rem var(--mono); letter-spacing: 0.07em; text-transform: uppercase; }
+.prerender-page { min-height: 70vh; }
+.prerender-page > p { max-width: 42rem; color: var(--muted); font-size: clamp(1rem, 2vw, 1.4rem); }
+.prerender-page h2 { margin: 3rem 0 1rem; font-size: clamp(2rem, 4vw, 4rem); letter-spacing: -0.07em; }
+.prerender-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: 0 2rem; max-width: 80rem; padding: 0; list-style: none; }
+.prerender-links li { border-top: 1px solid var(--line); padding: 1rem 0; color: var(--muted); }
+.prerender-links a, .prerender-page > p a { color: var(--ink); text-decoration: underline; text-underline-offset: 0.2em; }
 .collection-detail__heading > div { min-width: 0; }
 .collection-detail__back { display: inline-block; margin-bottom: 1.2rem; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.18em; }
 .collection-detail__back:hover, .collection-detail__back:focus-visible { color: var(--ink); }

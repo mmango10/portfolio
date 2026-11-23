@@ -1,4 +1,6 @@
-const cloudName = String(import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || '').trim();
+import { readCachedMedia, writeCachedMedia } from './mediaCache.js';
+
+const cloudName = String(import.meta.env?.VITE_CLOUDINARY_CLOUD_NAME || '').trim();
 
 export const cloudinaryConfig = {
   cloudName,
@@ -89,15 +91,28 @@ export function normalizeCloudinaryAsset(asset, section, index, fallbackItem = {
 }
 
 async function fetchTag(tag, signal) {
-  const response = await fetch(cloudinaryListUrl(tag), { signal });
-  if (!response.ok) {
-    const error = new Error(`Cloudinary list request failed (${response.status})`);
-    error.status = response.status;
+  const cacheKey = `portfolio:cloudinary:${cloudName}:${tag}`;
+  try {
+    const response = await fetch(cloudinaryListUrl(tag), { signal });
+    if (!response.ok) {
+      const error = new Error(`Cloudinary list request failed (${response.status})`);
+      error.status = response.status;
+      throw error;
+    }
+
+    const payload = await response.json();
+    if (!Array.isArray(payload.resources)) throw new Error('Cloudinary list returned invalid resources');
+    writeCachedMedia(cacheKey, payload.resources);
+    return shuffleAssets(payload.resources);
+  } catch (error) {
+    if (signal?.aborted || error.name === 'AbortError') throw error;
+    const cached = readCachedMedia(cacheKey);
+    if (cached) {
+      console.warn(`Cloudinary tag "${tag}" unavailable; showing cached media.`, error);
+      return shuffleAssets(cached);
+    }
     throw error;
   }
-
-  const payload = await response.json();
-  return Array.isArray(payload.resources) ? shuffleAssets(payload.resources) : [];
 }
 
 async function fetchTagGroup(tags, signal) {

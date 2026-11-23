@@ -5,8 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prebuild": "node scripts/generate-site.mjs sitemap",
     "build": "vite build",
-    "preview": "vite preview"
+    "postbuild": "node scripts/generate-site.mjs pages",
+    "preview": "vite preview",
+    "test": "node --test"
   },
   "dependencies": {
     "@vitejs/plugin-react": "6.3.0",

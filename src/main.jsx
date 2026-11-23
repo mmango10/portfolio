@@ -330,7 +330,9 @@ function CollectionTile({ collection, loading, showCount = false }) {
     ? 'Video archive'
     : loading
       ? 'Loading'
-      : 'No image yet';
+      : collection.unavailable
+        ? 'Temporarily unavailable'
+        : 'No image yet';
   const countLabel = collection.type === 'videos'
     ? `${collection.items.length} videos`
     : `${collection.items.length} ${collection.items.length === 1 ? 'image' : 'images'}`;
@@ -430,7 +432,11 @@ function CollectionDetailPage({ collection, loading, backHref = '/collections', 
         </div>
       ) : (
         <p className="collections-page__empty">
-          {loading ? 'Loading collection…' : 'No media in this collection yet.'}
+          {loading
+            ? 'Loading collection…'
+            : collection.unavailable
+              ? 'Photos temporarily unavailable. Please try again later.'
+              : 'No media in this collection yet.'}
         </p>
       )}
     </main>
@@ -522,7 +528,7 @@ function App() {
 
     return Array.isArray(collectionResult?.assets)
       ? withCloudinaryItems(section, collectionResult.assets)
-      : section;
+      : { ...section, unavailable: isCloudinaryConfigured() && collectionResult?.assets === null };
   });
   const grandImageAssets = cloudinaryMedia.status === 'ready' ? cloudinaryMedia.sections.grandImage : null;
   const grandImageItems = Array.isArray(grandImageAssets) && grandImageAssets.length > 0
