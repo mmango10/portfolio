@@ -14,5 +14,8 @@
     "react": "19.3.1",
     "react-dom": "19.3.1"
   },
-  "devDependencies": {}
+  "devDependencies": {},
+  "allowScripts": {
+    "fsevents": false
+  }
 }
